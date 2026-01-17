@@ -1,0 +1,81 @@
+{
+  "common": {
+    "system": {
+      "frames": 12,
+      "use_gt_scale": false,
+      "translation_mode": "dir",
+      "loop_every_kf": 1,
+      "posegraph_every_kf": 1
+    },
+    "keyframe": {
+      "min_inliers": 200,
+      "min_gap": 1,
+      "parallax_px": 18.0
+    },
+    "klt": {
+      "max_tracks": 2200,
+      "min_tracks": 900,
+      "quality": 0.01,
+      "min_distance": 8,
+      "block_size": 7,
+      "pyr_levels": 3,
+      "win_size": [21, 21],
+      "win_radius": 5,
+      "iters": 10,
+      "fb_thresh": 1.0
+    },
+    "outputs": {
+      "visuals": false,
+      "export_geometry": "pointcloud"
+    }
+  },
+
+  "python": {
+    "ba": {
+      "window": 5,
+      "max_points": 200,
+      "iters": 6,
+      "lambda0": 0.01,
+      "huber_delta": 3.0,
+      "eps_pose": 1e-6
+    },
+    "loop_closure": {
+      "min_kf_gap": 8,
+      "top_k": 5,
+      "min_matches": 80,
+      "min_inliers": 60
+    },
+    "pose_graph": {
+      "iters": 10,
+      "lambda0": 0.01,
+      "eps": 1e-6,
+      "w_rot": 1.0,
+      "w_trans": 1.0
+    },
+    "mesh_stereo": {
+      "kf_pair": [0, 1],
+      "step": 4,
+      "num_disparities": 128,
+      "block_size": 7,
+      "disp_min": 1.0,
+      "disp_jump": 3.0,
+      "z_max_percentile": 98.0
+    }
+  },
+
+  "cpp": {
+    "ba": {
+      "window": 6,
+      "iters": 5,
+      "max_points": 600,
+      "huber_delta": 3.0,
+      "lambda": 0.001
+    },
+    "mesh_sparse": {
+      "kf": 0,
+      "max_points": 2500,
+      "grid_px": 4,
+      "max_edge_px": 80.0
+    }
+  }
+}
