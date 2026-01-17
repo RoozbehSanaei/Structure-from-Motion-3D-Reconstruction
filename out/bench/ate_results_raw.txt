@@ -1,0 +1,131 @@
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_work/templering_sfm_dual_repo/samples/python/keyframes_camera_centers.csv --start 0 --count 2 --sim3
+
+ATE (N keyframes)
+  mode: Sim(3)
+  start: 0  count: 2
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+  scale (s): 1
+  ATE_RMSE: 3.39522e-11
+  mean/median/max: 3.39522e-11 / 3.39523e-11 / 3.39523e-11
+  per_frame_error:
+    templeR0001.png: 3.39523e-11
+    templeR0003.png: 3.39522e-11
+
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_work/templering_sfm_dual_repo/samples/python/keyframes_camera_centers.csv --start 0 --count 2 --se3
+
+ATE (N keyframes)
+  mode: SE(3)
+  start: 0  count: 2
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+  ATE_RMSE: 1.85289e-08
+  mean/median/max: 1.85289e-08 / 1.85289e-08 / 1.85289e-08
+  per_frame_error:
+    templeR0001.png: 1.85289e-08
+    templeR0003.png: 1.85289e-08
+
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_work/templering_sfm_dual_repo/samples/python/keyframes_camera_centers.csv --start 0 --count 4 --sim3
+
+ATE (N keyframes)
+  mode: Sim(3)
+  start: 0  count: 4
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+    [2] templeR0005.png
+    [3] templeR0006.png
+  scale (s): 0.983035
+  ATE_RMSE: 0.0140361
+  mean/median/max: 0.0132102 / 0.0173596 / 0.0184602
+  per_frame_error:
+    templeR0001.png: 0.0173596
+    templeR0003.png: 0.00778594
+    templeR0005.png: 0.0184602
+    templeR0006.png: 0.00923513
+
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_work/templering_sfm_dual_repo/samples/python/keyframes_camera_centers.csv --start 0 --count 4 --se3
+
+ATE (N keyframes)
+  mode: SE(3)
+  start: 0  count: 4
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+    [2] templeR0005.png
+    [3] templeR0006.png
+  ATE_RMSE: 0.0147718
+  mean/median/max: 0.0139787 / 0.0176168 / 0.0191402
+  per_frame_error:
+    templeR0001.png: 0.0191402
+    templeR0003.png: 0.00706749
+    templeR0005.png: 0.0176168
+    templeR0006.png: 0.0120904
+
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_out/out/bench/cpp_keyframes_filtered_N2.csv --start 0 --count 2 --sim3
+
+ATE (N keyframes)
+  mode: Sim(3)
+  start: 0  count: 2
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+  scale (s): 1
+  ATE_RMSE: 3.52606e-11
+  mean/median/max: 3.52606e-11 / 3.52606e-11 / 3.52606e-11
+  per_frame_error:
+    templeR0001.png: 3.52606e-11
+    templeR0003.png: 3.52606e-11
+
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_out/out/bench/cpp_keyframes_filtered_N2.csv --start 0 --count 2 --se3
+
+ATE (N keyframes)
+  mode: SE(3)
+  start: 0  count: 2
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+  ATE_RMSE: 1.85289e-08
+  mean/median/max: 1.85289e-08 / 1.85289e-08 / 1.85289e-08
+  per_frame_error:
+    templeR0001.png: 1.85289e-08
+    templeR0003.png: 1.85289e-08
+
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_out/out/bench/cpp_keyframes_filtered_N4.csv --start 0 --count 4 --sim3
+
+ATE (N keyframes)
+  mode: Sim(3)
+  start: 0  count: 4
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+    [2] templeR0005.png
+    [3] templeR0006.png
+  scale (s): 0.983035
+  ATE_RMSE: 0.0140361
+  mean/median/max: 0.0132102 / 0.0173596 / 0.0184602
+  per_frame_error:
+    templeR0001.png: 0.0173596
+    templeR0003.png: 0.00778594
+    templeR0005.png: 0.0184602
+    templeR0006.png: 0.00923513
+
+$ /mnt/data/stage2_work/templering_sfm_dual_repo/cpp/build_stage2/ate_keyframes --par /mnt/data/stage2_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage2_out/out/bench/cpp_keyframes_filtered_N4.csv --start 0 --count 4 --se3
+
+ATE (N keyframes)
+  mode: SE(3)
+  start: 0  count: 4
+  keyframes:
+    [0] templeR0001.png
+    [1] templeR0003.png
+    [2] templeR0005.png
+    [3] templeR0006.png
+  ATE_RMSE: 0.0147718
+  mean/median/max: 0.0139787 / 0.0176168 / 0.0191402
+  per_frame_error:
+    templeR0001.png: 0.0191402
+    templeR0003.png: 0.00706749
+    templeR0005.png: 0.0176168
+    templeR0006.png: 0.0120904

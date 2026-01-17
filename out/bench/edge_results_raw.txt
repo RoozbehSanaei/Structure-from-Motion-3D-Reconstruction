@@ -1,0 +1,41 @@
+Stage 3 — Ground-truth keyframe-edge evaluation (0->1)
+
+Python command:
+  /mnt/data/stage3_work/templering_sfm_dual_repo/cpp/build/gt_keyframe_edge --par /mnt/data/stage3_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage3_work/templering_sfm_dual_repo/samples/python/keyframes_camera_centers.csv --edges /mnt/data/stage3_work/templering_sfm_dual_repo/samples/python/posegraph_edges.csv --i 0 --j 1
+
+Python output:
+Keyframe edge (ground truth)
+  i=0 (templeR0001.png)
+  j=1 (templeR0003.png)
+  rvec_gt = [-0.264607, 0.000584, 0.038328]
+  tdir_gt = [0.015329, -0.992538, 0.120964]
+
+Estimated edge (from posegraph_edges.csv)
+  kind     = odom
+  rvec_est = [-0.180853, -0.010483, 0.013834]
+  tdir_est = [0.063810, -0.995338, 0.072320]
+
+Errors vs ground truth
+  rotation error (deg)            = 5.039282
+  translation direction error (deg)= 3.938996
+
+
+C++ command:
+  /mnt/data/stage3_work/templering_sfm_dual_repo/cpp/build/gt_keyframe_edge --par /mnt/data/stage3_work/templering_sfm_dual_repo/data/middlebury_templeRing/templeRing/templeR_par.txt --keyframes /mnt/data/stage3_work/templering_sfm_dual_repo/samples/cpp/keyframes_camera_centers.csv --edges /mnt/data/stage3_work/templering_sfm_dual_repo/samples/cpp/posegraph_edges.csv --i 0 --j 1
+
+C++ output:
+Keyframe edge (ground truth)
+  i=0 (templeR0001.png)
+  j=1 (templeR0003.png)
+  rvec_gt = [-0.264607, 0.000584, 0.038328]
+  tdir_gt = [0.015329, -0.992538, 0.120964]
+
+Estimated edge (from posegraph_edges.csv)
+  kind     = odom
+  rvec_est = [-0.180853, -0.010483, 0.013834]
+  tdir_est = [0.063810, -0.995338, 0.072320]
+
+Errors vs ground truth
+  rotation error (deg)            = 5.039282
+  translation direction error (deg)= 3.938996
+
