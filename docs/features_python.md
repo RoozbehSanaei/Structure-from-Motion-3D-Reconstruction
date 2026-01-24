@@ -1,197 +1,260 @@
-## Scoped choices with `enum class`
+## Named choices with strings
 
-A scoped enumeration is a small, fixed menu of named choices. It helps code stay readable because you work with words (like `MESH`) instead of “magic numbers” (like `3`). It also keeps the names “scoped” to the enum type, which reduces accidental name clashes. In this code, `ExportGeometry` represents what kind of geometry output to produce. Using named options makes later logic easier to follow, because the program can store and check a clear choice rather than relying on string comparisons everywhere.
+### `StrEnum` for readable configuration values
 
-```cpp
-enum class ExportGeometry {
-  NONE=0, POINTCLOUD=1, MESH=2, BOTH=3
-};
+`StrEnum` is a way to define a small set of named options where each option is a real text value. This keeps configuration readable, because the program can compare against clear names instead of remembering special strings scattered across the code. In `templering_sfm.py`, `TranslationMode` and `ExportGeometry` are defined as `StrEnum` types. That lets the program accept user-facing values like `"full"` or `"pointcloud"` while still working with a controlled list of allowed choices. Generic use is to centralize “allowed words” in one place. In this code, those enum values are used to drive branches for motion constraints and export behavior.
+
+```python
+from enum import StrEnum
+
+class ExportGeometry(StrEnum):
+    NONE = "none"
+    POINTCLOUD = "pointcloud"
+    BOTH = "both"
+
+mode = ExportGeometry.POINTCLOUD
+if mode == ExportGeometry.NONE:
+    pass
 ```
 
-## Flexible path arguments with `std::initializer_list`
+---
 
-`std::initializer_list` lets a function accept a brace-written list like `{ "a", "b", "c" }` without the caller having to create a separate container first. Think of it as “handing a short list of steps” to a function. In this program, the JSON lookup helpers accept paths expressed as a short sequence of keys. That makes call sites concise and readable, because the caller can pass a path in-place rather than building an array or vector just to pass a few items.
+## Object attributes that compute values
 
-```cpp
-static const minijson::Value* jpick(const minijson::Value& root,
-                                   std::initializer_list<const char*> a,
-                                   std::initializer_list<const char*> b)
-{
+### `@property` for “looks like a field, runs like a function”
+
+A `property` lets you expose a method as if it were a simple attribute. You access it without parentheses, which keeps calling code clean, while still allowing the value to be computed on demand. In `templering_sfm.py`, `MiddleburyRecord` defines `pose_wc` and `pose_cw` as properties. That means other parts of the program can write `rec.pose_cw` and receive a computed pose object, without needing to remember the conversion math every time. Generic use is to hide repeated calculations behind a friendly attribute name. Here, it packages “build the pose from stored R and t” into a single, readable access.
+
+```python
+class MiddleburyRecord:
+    def __init__(self, R, t):
+        self.R = R
+        self.t = t
+
+    @property
+    def pose_wc(self):
+        return (self.R, self.t)  # simplified: returns pose parts
 ```
 
-## Small helpers with `inline`
+---
 
-`inline` marks a function as a lightweight helper that is intended to be cheap to call. A practical way to think about it is: this helper is used a lot, so the compiler is given more freedom to make the call overhead minimal. In this code, pixel sampling is a tiny operation done repeatedly inside tracking and image processing. Declaring it `inline` fits that usage pattern: it communicates “this is a small building block” that can be used many times without cluttering performance-critical loops.
+## Methods that are tied to the class, not the instance
 
-```cpp
-static inline double sample_bilinear(const GrayImage& im, double x, double y){
+### `@staticmethod` for helpers that live inside a class
+
+A `staticmethod` is a function stored inside a class for organization, but it does not receive the usual `self` object. This is useful when the logic belongs “near” the class conceptually, yet it does not need access to a particular instance. In `templering_sfm.py`, `TempleRing._read_par` and `TempleRing._read_ang` are static methods because they are parsing helpers: they take a path, read a file, and return structured data. Generic use is to keep related helpers grouped with the type they support. In this code, it prevents those file-reading utilities from floating around as unrelated global functions.
+
+```python
+class TempleRing:
+    @staticmethod
+    def _read_ang(path):
+        # simplified: read and return a dictionary
+        return {}
 ```
 
-## Type-level utility via a `static` member function
+### `@classmethod` for alternate constructors that return `cls(...)`
 
-A `static` member function belongs to the type itself, rather than to one specific object. You call it with `TypeName::FunctionName()` and you do not need an instance first. In this program, the pose structure provides an `Identity()` function that creates a standard “do-nothing” pose. This is useful as a clear starting value when building up camera motion and transformations, because the caller can request a known default pose in one obvious line.
+A `classmethod` receives the class itself (commonly named `cls`). This is useful for “factory” functions that create an instance in a particular way. In `templering_sfm.py`, `TempleRing.from_zip` and `TempleRing.from_dir` are class methods: they prepare data, then return a fully built `TempleRing` object. Generic use is to offer multiple clean entry points for building the same type, while keeping the core initialization consistent. Here, it allows loading from either an extracted folder or a zip archive, without duplicating the object creation logic across the codebase.
 
-```cpp
-struct PoseCW {
-  Mat33 Rcw;
-  Vec3 tcw;
-  static PoseCW Identity(){ return {Mat33::I(), {0,0,0}}; }
-};
+```python
+class TempleRing:
+    def __init__(self, root, records, angles):
+        self.root = root
+        self.records = records
+        self.angles = angles
+
+    @classmethod
+    def from_dir(cls, root):
+        records = []   # simplified
+        angles = {}
+        return cls(root, records, angles)
 ```
 
-## “Local-only” data records with a struct declared inside a function
+---
 
-C++ allows you to define a `struct` inside a function when the type is only meaningful there. This keeps the type from leaking into the rest of the file and reduces the mental load for readers: the record exists only where it is used. In this program, a small `Cand` record is used to hold candidate points during feature selection. By defining it locally, the code communicates that “Cand is just a temporary shape for this one procedure,” not a reusable global type.
+## Numeric operations that read like math
 
-```cpp
-struct Cand { int x,y; double s; };
+### Matrix multiplication with the `@` operator
+
+The `@` operator performs matrix multiplication. It is designed for math-heavy code so the intent stays obvious: `A @ B` reads like “multiply these two matrices.” In `templering_sfm.py`, it appears in camera projection and pose conversions, such as `K @ ...` when building a camera projection matrix and `R.T @ t` when moving between coordinate frames. Generic use is to keep linear-algebra expressions short and close to textbook form. In this code, it helps keep the camera model readable, which matters because those expressions are used repeatedly in tracking, triangulation, and optimization.
+
+```python
+import numpy as np
+
+K = np.eye(3)
+R = np.eye(3)
+t = np.zeros((3, 1))
+
+P = K @ np.hstack([R, t])  # projection-like matrix (simplified)
 ```
 
-## Read-only promise with a `const` member function
+---
 
-When a member function ends with `const`, it promises that calling it will not change the object’s stored data. This matters in two ways: it makes intent clear to humans, and it lets the compiler allow calls on “read-only” objects. In this code, `MapState::has` is a check: it answers whether a track id is already known. Because it should only check and not modify, the `const` marker matches the real purpose of the function.
+## Compact choices and updates
 
-```cpp
-struct MapState {
-  std::unordered_map<int,int> tid2pid;
-  std::unordered_map<int, MapPoint> pts;
-  bool has(int tid) const { return tid2pid.find(tid) != tid2pid.end(); }
-  int add(int tid, Vec3 Xw){
+### Conditional expression: `a if condition else b`
+
+A conditional expression is a one-line way to choose between two values. It is helpful when you need a simple decision right where a value is being assigned. In `templering_sfm.py`, it is used to pick configuration sources and defaults, for example selecting a calibration matrix from the dataset unless a YAML file is provided. Generic use is to keep small “either/or” decisions close to the variable they define. In this code, it reduces boilerplate and makes the “fallback” rule clear: use the provided input when present, otherwise rely on built-in or dataset defaults.
+
+```python
+use_yaml = False
+K = "from_yaml" if use_yaml else "from_dataset"
 ```
 
-## Passing by reference with `&` parameters
+### Augmented assignment like `+=` for “update in place”
 
-A reference parameter (written with `&`) lets a function work directly with the caller’s object instead of making a full copy. For large objects, copying can be slow and unnecessary. A `const &` reference is “read-only”: the function can look but cannot change it. In this program, the bundle adjustment routine takes large structures like matrices and configuration objects by reference. That matches how the function is used: it needs access to shared state and should avoid making duplicates of big data.
+Augmented assignment updates a value using its current value, such as `x += 1`. This is common in numeric code and loops because it is concise and shows “this variable is being adjusted.” In `templering_sfm.py`, one example is `b2[j] += eps` inside a numerical-derivative routine: a copy of a parameter vector is nudged by a small amount to estimate a slope. Generic use is to express small incremental changes without repeating the variable name. In this code, it makes the “perturb one coordinate” step visually obvious, which is important for correctness when building Jacobians.
 
-```cpp
-static void bundle_adjust_window(const Mat33& K,
-                                 std::vector<Keyframe>& kfs,
-                                 MapState& map,
-                                 const BAConfig& cfg)
-{
+```python
+eps = 1e-6
+b2 = [0.0, 0.0, 0.0]
+j = 1
+b2[j] += eps
 ```
 
-## Safe “start from zero” with value-initialization `{}`
+---
 
-Writing `{}` after a variable tells C++ to initialize it to a clean default state. For numeric storage, that typically means zeroed values. This is useful because it avoids “leftover garbage” data that can happen when a variable is created without initialization. In this program, matrices used for calculations are created with `{}` before individual entries are filled in. That reduces the risk of accidental use of uninitialized elements during intermediate steps of math-heavy routines.
+## Taking parts of a sequence
 
-```cpp
-Mat33 inv{};
-inv(0,0) =  (K(1,1)*K(2,2)-K(1,2)*K(2,1))/d;
+### Slicing with `[:3]`, `[3:]`, and similar forms
+
+Slicing selects a portion of a list, string, or array using start and end positions. It is a simple way to split data into meaningful parts. In `templering_sfm.py`, slicing is used when a 6-number pose update is split into rotation and translation components, such as `b2[:3]` for the first three values and `b2[3:]` for the remaining values. Generic use is to avoid manual indexing and to keep “take the first chunk” or “take the rest” readable. In this code, slicing keeps optimization code clean while manipulating stacked parameter vectors.
+
+```python
+x = [10, 20, 30, 40, 50, 60]
+rot = x[:3]
+trans = x[3:]
 ```
 
-## Fixed-size storage with `std::array`
+---
 
-`std::array` is a fixed-size container: its length is part of the type, so it always has the same number of slots. This is helpful when the amount of data is known up front, like a fixed-length record read from a dataset. In this code, a 21-value block is read into an array, then different parts of that array are used to fill camera calibration and pose fields. Using `std::array` makes the “exactly 21 values” expectation explicit.
+## Building dictionaries and defaults
 
-```cpp
-std::array<double,21> v{};
+### Dictionary comprehension `{k: v for ...}`
+
+A dictionary comprehension builds a dictionary in a compact way. It is useful when you already have items that can be turned into key–value pairs, and you want the result in one expression. In `templering_sfm.py`, this style is used to build observation maps, turning track identifiers into stored 2D measurements. Generic use is to transform data while you build the final dictionary, often applying small conversions like casting IDs to integers. In this code, it supports building the “observations by track id” structure that later steps use for triangulation and bundle adjustment.
+
+```python
+pairs = [(101, "p1"), (102, "p2")]
+obs = {int(tid): val for tid, val in pairs}
 ```
 
-## Grow-as-needed lists with `std::vector`
+### `defaultdict` to avoid “check if key exists” boilerplate
 
-`std::vector` is a growable list. You can start empty and append items as you discover them, which is common when reading files or building results step-by-step. In this program, records are accumulated into a vector after reading the dataset. The code also calls `reserve(...)` to pre-allocate enough space ahead of time, which reduces repeated resizing as elements are appended. This matches the workflow: read N items, store N items, then return the complete list.
+A `defaultdict` is a dictionary that automatically creates a default value the first time a missing key is accessed. This is handy when each key should map to a growing list. In `templering_sfm.py`, `track_hist` is a `defaultdict(list)`, which allows the code to append to `track_hist[tid]` even when `tid` is seen for the first time. Generic use is to simplify “grouping” logic. Here, it keeps tracking history code straightforward: store per-track sequences without writing repeated “if key not in dict: create list” checks.
 
-```cpp
-std::vector<MBRecord> recs;
-recs.reserve((size_t)n);
-// ...
-recs.push_back(r);
+```python
+from collections import defaultdict
+
+track_hist = defaultdict(list)
+tid = 7
+track_hist[tid].append((0, (123.4, 56.7)))
 ```
 
-## Fast key lookup with `std::unordered_map`
+---
 
-An `std::unordered_map` stores pairs of (key → value) so you can quickly find a value when you know its key. The “unordered” part means it is organized for speed rather than for sorted order. In this code, `kf2local` maps a keyframe id to a local index in a sliding window. That is exactly the kind of lookup where a hash map helps: later steps can jump from an id to its index without scanning a whole list.
+## Iteration helpers that keep code readable
 
-```cpp
-std::unordered_map<int,int> kf2local;
-kf2local.reserve((size_t)W);
-for(int li=0; li<W; ++li) kf2local.emplace(kfs[w0+li].kf_id, li);
+### Generator expression `(x for x in items)` for “values on demand”
+
+A generator expression produces values one at a time instead of building a full list immediately. This is useful when you only need to feed values into another operation, such as `max`, `sum`, or `any`. In `templering_sfm.py`, it appears in places like computing an image dimension from resized images, using a form like `max(im.size[0] for im in resized)`. Generic use is to reduce temporary objects and keep the intent focused on “compute a summary.” In this code, it supports quick aggregation steps during preprocessing without creating extra intermediate lists.
+
+```python
+widths = [320, 640, 800]
+m = max(w for w in widths)
 ```
 
-## Membership tracking with `std::unordered_set`
+### `zip(...)` for walking multiple sequences together
 
-`std::unordered_set` stores “just keys” and is used when you only care whether something is present. It is a natural fit for “have we used this already?” checks. In this program, the mesh export path uses a grid-based subsampling step. It tracks which grid cells have already been taken so the output points do not cluster into near-duplicates. The set supports fast membership tests (`find`) and fast insertion (`insert`) as new cells are accepted.
+`zip` lets you iterate over multiple sequences in lockstep, yielding pairs (or tuples) of corresponding items. This is useful when two lists represent aligned information, such as “each keyframe has a matching optimized pose.” In `templering_sfm.py`, `zip` is used when pairing keyframes with optimized results and when building structures from two parallel sequences. Generic use is to avoid manual indexing, which is easy to get wrong. In this code, `zip` makes it clearer that two streams of data are intended to match position-by-position.
 
-```cpp
-std::unordered_set<CellKey, CellHash> used;
-used.reserve((size_t)max_points*2);
-// ...
-if(used.find(ck) != used.end()) continue;
-used.insert(ck);
+```python
+keyframes = ["kf0", "kf1", "kf2"]
+poses = ["p0", "p1", "p2"]
+
+for kf, p in zip(keyframes, poses):
+    pass
 ```
 
-## Returning two related results with `std::pair`
+### `range(n)` for counted loops
 
-Sometimes a function naturally produces two outputs that should stay together. `std::pair` is a simple way to return exactly two items as one unit. In this code, `inv_wc()` computes an inverse pose representation and returns both the rotation and the translation together. This keeps the return value compact and avoids creating a custom struct just for two fields, while still making it clear that the two results belong to the same computed transform.
+`range(n)` produces a sequence of integers from 0 up to `n - 1`. It is commonly used when the number of repetitions matters more than the values in a list. In `templering_sfm.py`, it is used in numeric routines where a loop must run a fixed number of times, such as iterating over 6 pose parameters when computing numerical derivatives. Generic use is to express “repeat this step N times” clearly. In this code, it fits places where the loop index itself has meaning, like selecting which coordinate of a parameter vector to perturb.
 
-```cpp
-std::pair<Mat33, Vec3> inv_wc() const {
-  const Mat33 Rwc = sfm::transpose(Rcw);
-  const Vec3 twc = -(Rwc * tcw);
-  return {Rwc, twc};
-}
+```python
+for j in range(6):
+    pass
 ```
 
-## Repeatable randomness with `std::mt19937`
+---
 
-`std::mt19937` is a pseudo-random number generator. It produces a sequence of “random-looking” values. When you give it a fixed seed (like `12345`), the sequence becomes repeatable, which is valuable for debugging: the same run produces the same sampling decisions. In this program, random sampling is used in a robust estimation loop where small subsets of correspondences are tried. Seeding the generator makes outcomes stable across runs while still providing variability inside the algorithm.
+## Small functions created in place
 
-```cpp
-std::mt19937 rng(12345);
+### `lambda` for short “one-off” functions
+
+A `lambda` is an unnamed function written inline. It is useful when a library function expects “a function argument,” but the logic is tiny and only used once. In `templering_sfm.py`, `lambda` appears when sorting a list of scored candidates, such as sorting by the score stored in the first element of each pair. Generic use is to keep sorting and selection readable without introducing a separate named function elsewhere. In this code, it makes the sorting rule explicit at the call site: “sort by score,” which supports loop-closure candidate selection.
+
+```python
+scored = [(10, "a"), (3, "b"), (7, "c")]
+scored.sort(key=lambda x: x[0], reverse=True)
 ```
 
-## Picking a random index range with `std::uniform_int_distribution`
+---
 
-A uniform integer distribution chooses integers within a specified inclusive range, with each integer equally likely. This is handy when you want to select random indices from a list. In this code, the distribution is set up to select indices that match the size of the input point list. Inside the loop, it fills an array of 8 indices by drawing from the distribution repeatedly. That directly supports the “pick a small random sample” step used in robust estimation.
+## Ignoring extra returned values cleanly
 
-```cpp
-std::uniform_int_distribution<int> uni(0, (int)pi.size()-1);
-// ...
-for(int k=0;k<8;k++) idx8[k] = uni(rng);
+### Extended unpacking with `*_` to capture “the rest”
+
+Extended unpacking allows you to assign some returned values to named variables while collecting any extra values into a list. The pattern `*_` is often used when you explicitly do not care about those extras. In `templering_sfm.py`, a projection function returns multiple outputs, but some call sites only need the first two, so you see a form like `uv2, z2, *_ = ...`. Generic use is to keep the assignment honest: it shows that there are more outputs, while still keeping the code focused on the outputs that matter at that moment. In this code, it helps numerical Jacobian code stay uncluttered.
+
+```python
+def project():
+    return "uv", 1.23, "extra1", "extra2"
+
+uv, z, *_ = project()
 ```
 
-## Randomizing order with `std::shuffle`
+---
 
-`std::shuffle` rearranges the elements of a container into a random order. A practical reason to shuffle is to avoid bias that comes from the original ordering (for example, spatial ordering or file ordering). In this program, candidate points are shuffled before selecting up to a maximum number of points. That means early elements are not always favored, and the selection process can be closer to a fair sample of the candidates.
+## Handling problems without crashing
 
-```cpp
-std::shuffle(cands.begin(), cands.end(), rng);
+### `try/except ... as e` to recover or report a clear error
+
+A `try/except` block lets the program attempt an operation that might fail, then handle the failure in a controlled way. The `as e` part stores the error object so the program can log it or decide what to do next. In `templering_sfm.py`, `_load_config_json` uses this pattern when reading and parsing a JSON config file. If parsing fails, the program can respond with a clear message and fall back to defaults, rather than continuing with broken configuration data. Generic use is to protect boundaries like file I/O and parsing. In this code, it keeps “bad config” from turning into confusing failures later.
+
+```python
+import json
+
+def load_config(text):
+    try:
+        return json.loads(text)
+    except Exception as e:
+        # simplified: return defaults after recording the error
+        return {}
 ```
 
-## Compact “choose A or B” logic with the ternary operator `?:`
+### `try/finally` to guarantee cleanup
 
-The ternary operator is a short form of an if/else that chooses between two expressions. It is useful when the decision is small and the code benefits from staying on one line. In this program, it is used to decide which condition to evaluate based on orientation. The result is still a clear “two-way choice,” just written more compactly. Readers can interpret it as: if the first check is true, use the middle expression; otherwise use the last expression.
+A `finally` block runs no matter what happens in the `try` block. This is used for cleanup steps that must happen even when an error occurs. In `templering_sfm.py`, `load_K_yaml` uses `try/finally` to ensure an OpenCV file handle is released, so resources are not left open. Generic use is to protect cleanup work like closing files, releasing locks, or freeing handles. In this code, it makes the calibration loading routine safer: whether reading succeeds or fails, the OpenCV `FileStorage` is released, keeping the rest of the program stable.
 
-```cpp
-return (o > 0.0) ? (det > 1e-12) : (det < -1e-12);
+```python
+def read_something(resource):
+    try:
+        return "data"
+    finally:
+        resource.close()
 ```
 
-## Reading values from a stream with `>>`
+---
 
-The `>>` operator pulls values out of a stream (like a file) and places them into variables. It is a simple way to parse whitespace-separated text: each extraction reads the next token and converts it to the variable’s type. In this code, `>>` is used to read an integer count, then repeatedly read an image name and a fixed set of numeric parameters. That matches the format of the dataset files: structured rows of numbers that are easy to ingest step-by-step.
+## Path joining that reads naturally
 
-```cpp
-int n=0;
-f >> n;
-// ...
-f >> r.img;
-for(int k=0;k<21;k++) f >> v[k];
-```
+### `PathA / "child"` for building file paths
 
-## Writing output with `<<`
+When using `pathlib.Path`, the `/` operator can be used to join paths in a readable way. Instead of manually adding slashes or worrying about platform differences, you combine a base path and a child name with a single operator. In `templering_sfm.py`, this appears in helpers like `_default_config_path`, which builds a default location for a JSON configuration file. Generic use is to keep file path construction clear and less error-prone. In this code, it supports locating resources relative to the repository structure, and it keeps path logic consistent across operating systems.
 
-The `<<` operator pushes values into an output stream. It supports chaining, so the program can build one readable line from multiple parts without manual string concatenation. In this code, progress messages are printed as the run proceeds, including the current frame index and counts of internal objects. This makes the program’s behavior visible while it runs, which is useful for long computations where you want reassurance that work is progressing normally.
+```python
+from pathlib import Path
 
-```cpp
-std::cout << "frame " << (fi+1) << "/" << frames << " | keyframes=" << kfs.size()
-          << " | map_points=" << map.pts.size() << "\n";
-```
-
-## Signaling failure with `throw std::runtime_error`
-
-Throwing a `std::runtime_error` is a way to stop normal execution when the program cannot continue safely, while also attaching a human-readable message explaining why. In this code, file opening is a critical prerequisite. If a required file cannot be opened, the helper throws an error immediately instead of continuing with missing data. This makes failures loud and specific, which is usually better than producing silent incorrect results later.
-
-```cpp
-if(!f) throw std::runtime_error("Failed to open: " + p.string());
+root = Path("/project")
+cfg_path = root / "config.json"
 ```
